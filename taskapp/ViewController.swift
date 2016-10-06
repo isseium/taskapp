@@ -9,8 +9,9 @@
 import UIKit
 import RealmSwift
 
-class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSource, UISearchBarDelegate {
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var searchBar: UISearchBar!
 
     // Realmインスタンスを取得する
     let realm = try! Realm()  // ←追加
@@ -18,7 +19,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // DB内のタスクが格納されるリスト。
     // 日付近い順\順でソート：降順
     // 以降内容をアップデートするとリスト内は自動的に更新される。
-    let taskArray = try! Realm().objects(Task).sorted("date", ascending: false)   // ←追加
+    var taskArray = try! Realm().objects(Task).sorted("date", ascending: false)   // ←追加
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -55,6 +56,9 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         
         let dateString:String = formatter.stringFromDate(task.date)
         cell.detailTextLabel?.text = dateString
+        if(task.category != nil){
+            cell.detailTextLabel?.text = dateString + " / " + (task.category?.title)!
+        }
         
         return cell
     }
@@ -62,7 +66,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     // MARK: UITableViewDelegateプロトコルのメソッド
     // 各セルを選択した時に実行されるメソッド
     func tableView(tableView: UITableView, didSelectRowAtIndexPath indexPath: NSIndexPath) {
-        performSegueWithIdentifier("cellSegue",sender: nil)
+        performSegueWithIdentifier("cellSegue", sender: nil)
     }
     
     // セルが削除が可能なことを伝えるメソッド
@@ -99,6 +103,12 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             let indexPath = self.tableView.indexPathForSelectedRow
             inputViewController.task = taskArray[indexPath!.row]
         } else {
+            // 絞り込み解除
+            searchBar.text = "";
+            taskArray = try! Realm().objects(Task).sorted("date", ascending: false)
+            tableView.reloadData()
+
+            // 新タスク作成
             let task = Task()
             task.date = NSDate()
             
@@ -109,6 +119,16 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
             inputViewController.task = task
         }
     }
-    
+
+    //サーチバー更新時(UISearchBarDelegateを関連づけておく必要があります）
+    func searchBar(searchBar: UISearchBar, textDidChange searchText: String) {
+        var tasks = try! Realm().objects(Task).sorted("date", ascending: false)
+        if(searchText != ""){
+//            tasks = tasks.filter("category.title = '\(searchText)'")
+            tasks = tasks.filter("category.title BEGINSWITH[c] %@", searchText)
+        }
+        taskArray = tasks
+        tableView.reloadData()
+    }
 }
 

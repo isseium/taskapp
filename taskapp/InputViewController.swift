@@ -9,13 +9,15 @@
 import UIKit
 import RealmSwift
 
-class InputViewController: UIViewController {
+class InputViewController: UIViewController, UIPickerViewDelegate, UIPickerViewDataSource {
     @IBOutlet weak var titleTextField: UITextField!
     @IBOutlet weak var contentsTextView: UITextView!
     @IBOutlet weak var datePicker: UIDatePicker!
+    @IBOutlet weak var categoryPicker: UIPickerView!
     
     let realm = try! Realm()
     var task:Task!
+    let categoriesArray = try! Realm().objects(Category).sorted("id")
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -27,7 +29,16 @@ class InputViewController: UIViewController {
         titleTextField.text = task.title
         contentsTextView.text = task.contents
         datePicker.date = task.date
+        if((task.category) != nil){
+            categoryPicker.selectRow(task.category!.id, inComponent: 0, animated: false)
+        }
     }
+    
+    override func viewWillAppear(animated: Bool) {
+        super.viewWillAppear(animated)
+        categoryPicker.reloadAllComponents()
+    }
+
     
     override func didReceiveMemoryWarning() {
         super.didReceiveMemoryWarning()
@@ -39,6 +50,9 @@ class InputViewController: UIViewController {
             self.task.title = self.titleTextField.text!
             self.task.contents = self.contentsTextView.text
             self.task.date = self.datePicker.date
+            if(self.categoriesArray.count > 0){                
+                self.task.category = self.categoriesArray[self.categoryPicker.selectedRowInComponent(0)]
+            }
             self.realm.add(self.task, update: true)
         }
         
@@ -72,14 +86,36 @@ class InputViewController: UIViewController {
         
     }
 
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
+    //表示列
+    func numberOfComponentsInPickerView(pickerView: UIPickerView) -> Int {
+        return 1
     }
-    */
-
+    
+    //表示個数
+    func pickerView(pickerView: UIPickerView, numberOfRowsInComponent component: Int) -> Int {
+        return categoriesArray.count
+    }
+    
+    //表示内容
+    func pickerView(pickerView: UIPickerView, titleForRow row: Int, forComponent component: Int) -> String? {
+        return categoriesArray[row].title as String
+    }
+    
+    // 選択時
+    func pickerView(pickerView: UIPickerView, didSelectRow row: Int, inComponent component: Int) {
+        
+    }
+    
+    override func prepareForSegue(segue: UIStoryboardSegue, sender: AnyObject?) {
+        let categoryViewController:CategoryViewController = segue.destinationViewController as! CategoryViewController
+        
+        let category = Category()
+        category.title = ""
+            
+        if categoriesArray.count != 0 {
+            category.id = categoriesArray.max("id")! + 1
+        }
+            
+        categoryViewController.category = category
+    }
 }
