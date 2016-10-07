@@ -56,6 +56,8 @@ class InputViewController: UIViewController, UIPickerViewDelegate, UIPickerViewD
             self.realm.add(self.task, update: true)
         }
         
+        setNotification(task)
+        
         super.viewWillDisappear(animated)
     }
     
